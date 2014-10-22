@@ -4,8 +4,7 @@
 import datetime # DateToTextConverter
 import urllib2, json # Weather
 import feedparser # BBC news
-
-import textwrap, subprocess, urllib2 # for downloading
+import textwrap, subprocess, urllib2, sys # for downloading
     
 class DateToTextConverter:
     
@@ -59,7 +58,7 @@ class WeatherEngine:
 
     def getWeatherMessage(self):
         now = "The weather conditions are %s with a temperature of %d degrees." % (self.getConditions(), self.getTemperature())
-        future = "The temperature will be between %s and %s degrees." % (round(self.getLowForecast()), round(self.getHighForecast()))
+        future = "The temperature will be between %s and %s degrees." % (int(self.getLowForecast()), int(self.getHighForecast()))
         return [now, future]
 
     def getConditions(self):
@@ -101,7 +100,7 @@ class WeatherEngine:
 
 class BBCNews:
     rssUrls = [
-#        ("Top", "http://feeds.bbci.co.uk/news/rss.xml"),
+        ("Top", "http://feeds.bbci.co.uk/news/rss.xml"),
         ("World", "http://feeds.bbci.co.uk/news/world/rss.xml"),
         ("Europe", "http://feeds.bbci.co.uk/news/world/europe/rss.xml"),
         ("Technology", "http://feeds.bbci.co.uk/news/technology/rss.xml")
@@ -130,7 +129,7 @@ class BBCNews:
 class Downloader:
     head = 'wget -q -U Mozilla '
     ttsUrl = 'http://translate.google.com/translate_tts?tl=en&q='
-    output = '" -O ~/test/'
+    output = '" -O /mnt/ram/'
     tail = '.mp3 '
     
     def __init__(self, prefix="chunk_"):
@@ -152,23 +151,28 @@ class Downloader:
         newMessages = []
         for index,msg in enumerate(messages):
             newMessages.extend(self.cleanupMessage(msg))
-        return messages
+        return newMessages
         
     def cleanupMessage(self, msg):
         msg = msg.replace('"', '').strip()
         msg = msg.replace("'", '').strip()
-        return msg
+        return textwrap.wrap(msg,100)
         
     def convertToAudio(self, text, fileindex):
         try:
             file = self.prefix+fileindex
-            sendthis = text.encode("utf-8").join(['"'+self.ttsUrl, self.output])
+            try:
+                sendthis = text.encode('iso-8859-1').join(['"'+self.ttsUrl, self.output])
+            except UnicodeDecodeError:
+                sendthis = urllib2.quote(text).encode('iso-8859-1').join(['"'+self.ttsUrl, self.output])
             call = self.head + sendthis +self.prefix + str(fileindex).zfill(2) + str(self.tail)
-            print call
-            print subprocess.check_output(call, shell=True)
+            subprocess.check_output(call, shell=True)
         except subprocess.CalledProcessError:
             print "Problem with this text: ", text
+            print sys.exc_info()[1]
             #print subprocess.check_output("echo " + text + " | festival --tts ", shell=True)
+        except:
+            print "couldn't do: ", text
 
 
 
@@ -194,6 +198,7 @@ class AlarmClock:
     
     def greet(self):
         self.messageparts.append("Good %s, %s." % (self.dateHelper.getPeriod(), self.name))
+        self.messageparts.append("I want 3 £ and 4 $. #coolbeans. 23 € later Hélene à Großstadt")
     
     def readDateAndTime(self):
         self.messageparts.append("Today is %s. The time now is %s." % (self.dateHelper.getDateAsText(), self.dateHelper.getTimeAsText()))
@@ -212,7 +217,7 @@ class AlarmClock:
         Downloader("chunk_").downloadMessages(self.messageparts)
     
     def readSpeech(self):
-        pass # TODO: implement me
+        subprocess.call ('mpg123 -h 10 -d 11 /mnt/ram/*.mp3', shell=True)
 
         
 if __name__ == "__main__":
