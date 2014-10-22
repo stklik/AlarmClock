@@ -5,6 +5,8 @@ import datetime # DateToTextConverter
 import urllib2, json # Weather
 import feedparser # BBC news
 import textwrap, subprocess, urllib2, sys # for downloading
+import os # for playing music
+
     
 class DateToTextConverter:
     
@@ -185,9 +187,19 @@ class AlarmClock:
         self.messageparts = []
         
     def readMessage(self):
+        self.playIntro()
         self.generateMessage()
         self.downloadSpeech()
         self.readSpeech()
+        self.playAlarm()
+
+    def playIntro(self):
+        #subprocess.call ('mpg123 %s/LionKing.mp3' % os.path.dirname(os.path.realpath(__file__)), shell=True)
+        subprocess.call ('omxplayer %s/LionKing.mp3' % os.path.dirname(os.path.realpath(__file__)), shell=True)
+
+    def playAlarm(self):
+        subprocess.call ('mpg123 %s/Alarm.mp3' % os.path.dirname(os.path.realpath(__file__)), shell=True) 
+        #subprocess.call ('omxplayer %s/Alarm.mp3' % os.path.dirname(os.path.realpath(__file__)), shell=True) 
         
     def generateMessage(self):
         self.greet()
@@ -198,7 +210,6 @@ class AlarmClock:
     
     def greet(self):
         self.messageparts.append("Good %s, %s." % (self.dateHelper.getPeriod(), self.name))
-        self.messageparts.append("I want 3 £ and 4 $. #coolbeans. 23 € later Hélene à Großstadt")
     
     def readDateAndTime(self):
         self.messageparts.append("Today is %s. The time now is %s." % (self.dateHelper.getDateAsText(), self.dateHelper.getTimeAsText()))
